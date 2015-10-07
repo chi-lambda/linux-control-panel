@@ -1,0 +1,47 @@
+<erl>
+
+unicode_to_html(Char) ->
+	case Char > 255 of
+		true -> io_lib:format("&#~p;", [Char]);
+		false -> Char
+	end.
+
+unicode_list_to_html(List) ->
+	lists:map(fun unicode_to_html/1, List).
+
+show_overview() ->
+	RawData = os:cmd("systemctl list-units *.service"),
+	Lines = string:tokens(RawData, "\r\n"),
+	unicode_list_to_html(os:cmd("systemctl list-units *.service")).
+
+show_service_status(Service) ->
+	unicode_list_to_html(os:cmd("systemctl status " ++ Service)).
+
+restart_service(Service) ->
+	unicode_list_to_html(os:cmd("systemctl restart " ++ Service)).
+
+out(Arg) ->
+	{Ip, _} = Arg#arg.client_ip_port,
+	Out = case Ip of
+		{192, 168, 178, _} ->
+			case queryvar(Arg, service) of
+				{ok, Service} ->
+					case queryvar(Arg, action) of
+						{ok, "status"} ->
+							show_service_status(Service);
+						{ok, "restart"} ->
+							restart_service(Service);
+						{ok, Action} ->
+							io_lib:format("Unknown action: ~p", [Action]);
+						undefined ->
+							show_service_status(Service)
+					end;
+				undefined ->
+					show_overview()
+			end;
+		Else ->
+			"access denied"
+	end,
+	{ehtml, {pre, [], Out}}.
+
+</erl>
