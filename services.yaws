@@ -1,5 +1,8 @@
 <html>
-<head><title>Service Control</title></head>
+<head>
+	<title>Service Control</title>
+	<link rel="stylesheet" type="text/css" href="static/style.css" />
+</head>
 <body>
 
 <erl>
@@ -13,6 +16,22 @@ unicode_to_html(Char) ->
 unicode_list_to_html(List) ->
 	lists:map(fun unicode_to_html/1, List).
 
+load_to_class("loaded    ") -> "loaded";
+load_to_class("not-found ") -> "notfound";
+load_to_class("masked    ") -> "masked";
+load_to_class(_) -> "".
+
+active_to_class("active   ") -> "active";
+active_to_class("inactive ") -> "inactive";
+active_to_class("failed   ") -> "failed";
+active_to_class(_) -> "".
+
+sub_to_class("dead    ") -> "dead";
+sub_to_class("exited  ") -> "exited";
+sub_to_class("running ") -> "running";
+sub_to_class("failed  ") -> "failed";
+sub_to_class(_) -> "".
+
 line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	Dot = lists:sublist(Line, 1, 2),
 	Unit = lists:sublist(Line, 3, 90),
@@ -23,9 +42,9 @@ line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	{tr, [], [
 		{td, [], unicode_list_to_html(Dot)},
 		{td, [], unicode_list_to_html(Unit)},
-		{td, [], unicode_list_to_html(Load)},
-		{td, [], unicode_list_to_html(Active)},
-		{td, [], unicode_list_to_html(Sub)},
+		{td, [{class, load_to_class(Load)}], unicode_list_to_html(Load)},
+		{td, [{class, active_to_class(Active)}], unicode_list_to_html(Active)},
+		{td, [{class, sub_to_class(Sub)}], unicode_list_to_html(Sub)},
 		{td, [], unicode_list_to_html(Desc)}
 	]};
 line_to_table_row(Line) -> {tr, [], [{td, [], unicode_list_to_html(Line)}]}.
