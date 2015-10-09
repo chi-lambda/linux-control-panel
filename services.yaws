@@ -46,27 +46,31 @@ allow_access({192, 168, 178, _}) -> true;
 allow_access({127, 0, 0, _}) -> true;
 allow_access(_) -> false.
 
+service_and_action(Arg) when Arg#arg.pathinfo /= undefined ->
+	list_to_tuple(string:tokens(Arg#arg.pathinfo, "/"));
+service_and_action(Arg) ->
+	case queryvar(Arg, service) of
+		{ok, Service} ->
+			case queryvar(Arg, action) of
+				{ok, Action} -> {Service, Action};
+				undefined -> {Service}
+			end;
+		undefined -> undefined
+	end.
+
 out(Arg) ->
 	{Ip, _} = Arg#arg.client_ip_port,
 	Out = case allow_access(Ip) of
 		true ->
-			case queryvar(Arg, service) of
-				{ok, Service} ->
-					case queryvar(Arg, action) of
-						{ok, "status"} ->
-							show_service_status(Service);
-						{ok, "restart"} ->
-							restart_service(Service);
-						{ok, Action} ->
-							{p, [], io_lib:format("Unknown action: ~p", [Action])};
-						undefined ->
-							show_service_status(Service)
-					end;
-				undefined ->
-					show_overview()
+			case service_and_action(Arg) of
+				{Service, "status"} -> show_service_status(Service);
+				{Service, "restart"} -> restart_service(Service);
+				{_, Action} -> {p, [], io_lib:format("Unknown action: ~p", [Action])};
+				{Service} -> show_service_status(Service);
+				undefined -> show_overview()
 			end;
 		false ->
-			{p, [], "access denied"}
+			{h1, [], "access denied"}
 	end,
 	{ehtml, Out}.
 
