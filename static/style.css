@@ -1,0 +1,32 @@
+.loaded {
+	color: #00CC00;
+}
+
+.notfound {
+	color: #808080;
+}
+
+.active {
+	color: #00CC00;
+}
+
+.inactive {
+	color: #808080;
+}
+
+.dead {
+	color: #202020;
+}
+
+.exited {
+	color: #808080;
+}
+
+.running {
+	color: #00CC00;
+}
+
+.failed {
+	color: #CC0000;
+}
+
