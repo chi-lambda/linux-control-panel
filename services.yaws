@@ -42,8 +42,8 @@ show_service_status(Service) ->
 restart_service(Service) ->
 	{pre, [], unicode_list_to_html(os:cmd("systemctl restart " ++ Service))}.
 
-allow_access({192, 168, 178, _}) -> true;
-allow_access({127, 0, 0, _}) -> true;
+allow_access(#arg{client_ip_port = {{192, 168, 178, _},_}}) -> true;
+allow_access(#arg{client_ip_port = {{127, 0, 0, _}, _}}) -> true;
 allow_access(_) -> false.
 
 service_and_action(Arg) when Arg#arg.pathinfo /= undefined ->
@@ -60,7 +60,7 @@ service_and_action(Arg) ->
 
 out(Arg) ->
 	{Ip, _} = Arg#arg.client_ip_port,
-	Out = case allow_access(Ip) of
+	Out = case allow_access(Arg) of
 		true ->
 			case service_and_action(Arg) of
 				{Service, "status"} -> show_service_status(Service);
