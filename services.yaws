@@ -16,6 +16,17 @@ unicode_to_html(Char) ->
 unicode_list_to_html(List) ->
 	lists:map(fun unicode_to_html/1, List).
 
+list_of_services() ->
+	RawData = os:cmd("systemctl list-units *.service"),
+	Lines = string:tokens(RawData, "\r\n"),
+	lists:map(fun(Line) -> string:strip(lists:sublist(Line, 3, 90)) end, Lines).
+
+list_of_actions() -> ["status", "restart"].
+
+contains([], _) -> false;
+contains([Element|_], Element) -> true;
+contains([_|T], Element) -> contains(T, Element).
+
 load_to_class("loaded    ") -> "loaded";
 load_to_class("not-found ") -> "notfound";
 load_to_class("masked    ") -> "masked";
@@ -36,7 +47,7 @@ unit_to_link(Unit) -> {a, [{href, ["services.yaws/", Unit]}], Unit}.
 
 line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	Dot = lists:sublist(Line, 1, 2),
-	Unit = lists:sublist(Line, 3, 90),
+	Unit = string:strip(lists:sublist(Line, 3, 90)),
 	Load = lists:sublist(Line, 93, 10),
 	Active = lists:sublist(Line, 103, 9),
 	Sub = lists:sublist(Line, 112, 8),
@@ -44,9 +55,9 @@ line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	{tr, [], [
 		{td, [], unicode_list_to_html(Dot)},
 		{td, [], unit_to_link(Unit)},
-		{td, [{class, load_to_class(Load)}], unicode_list_to_html(Load)},
-		{td, [{class, active_to_class(Active)}], unicode_list_to_html(Active)},
-		{td, [{class, sub_to_class(Sub)}], unicode_list_to_html(Sub)},
+		{td, [{class, load_to_class(Load)}], Load},
+		{td, [{class, active_to_class(Active)}], Active},
+		{td, [{class, sub_to_class(Sub)}], Sub},
 		{td, [], unicode_list_to_html(Desc)}
 	]};
 line_to_table_row(Line) -> {tr, [], [{td, [], unicode_list_to_html(Line)}]}.
@@ -67,17 +78,32 @@ allow_access(#arg{client_ip_port = {{192, 168, 178, _},_}}) -> true;
 allow_access(#arg{client_ip_port = {{127, 0, 0, _}, _}}) -> true;
 allow_access(_) -> false.
 
+filter_service_and_action({Service, Action}) ->
+	Services = list_of_services(),
+	Actions = list_of_actions(),
+	case contains(Services, Service) and contains(Actions, Action) of
+		true -> {Service, Action};
+		false -> undefined
+	end;
+filter_service_and_action({Service}) ->
+	case contains(list_of_services(), Service) of
+		true -> {Service};
+		false -> undefined
+	end;
+filter_service_and_action(undefined) -> undefined.
+
 service_and_action(Arg) when Arg#arg.pathinfo /= undefined ->
-	list_to_tuple(string:tokens(Arg#arg.pathinfo, "/"));
+	filter_service_and_action(list_to_tuple(string:tokens(Arg#arg.pathinfo, "/")));
 service_and_action(Arg) ->
-	case queryvar(Arg, service) of
+	ServiceAndAction = case queryvar(Arg, service) of
 		{ok, Service} ->
 			case queryvar(Arg, action) of
 				{ok, Action} -> {Service, Action};
 				undefined -> {Service}
 			end;
 		undefined -> undefined
-	end.
+	end,
+	filter_service_and_action(ServiceAndAction).
 
 out(Arg) ->
 	{Ip, _} = Arg#arg.client_ip_port,
