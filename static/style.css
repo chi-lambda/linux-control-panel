@@ -35,3 +35,7 @@
 	background-color: #CC0000;
 }
 
+thead {
+	font-weight: bold;
+	font-variant: small-caps;
+}

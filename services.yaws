@@ -62,10 +62,20 @@ line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	]};
 line_to_table_row(Line) -> {tr, [], [{td, [], unicode_list_to_html(Line)}]}.
 
+header() ->
+	{thead, [], {tr, [], [
+		{td, [], ""},
+		{td, [], "Unit"},
+		{td, [], "Load"},
+		{td, [], "Active"},
+		{td, [], "Sub"},
+		{td, [], "Description"}
+	]}}.
+
 show_overview() ->
 	RawData = os:cmd("systemctl list-units *.service"),
 	Lines = string:tokens(RawData, "\r\n"),
-	{table, [], lists:map(fun line_to_table_row/1, lists:sublist(Lines, erlang:length(Lines) - 5))}.
+	{table, [], [header()|lists:map(fun line_to_table_row/1, lists:sublist(Lines, 2, erlang:length(Lines) - 6))]}.
 %	{pre, [], unicode_list_to_html(os:cmd("systemctl list-units *.service"))}.
 
 show_service_status(Service) ->
