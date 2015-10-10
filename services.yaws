@@ -72,38 +72,39 @@ header() ->
 		{td, [], "Description"}
 	]}}.
 
-show_overview() ->
+show_overview(Arg) when Arg#arg.pathinfo /= undefined ->
+	{redirect_local, "/services.yaws"};
+show_overview(Arg) ->
 	RawData = os:cmd("systemctl list-units *.service"),
 	Lines = string:tokens(RawData, "\r\n"),
-	{table, [], [header()|lists:map(fun line_to_table_row/1, lists:sublist(Lines, 2, erlang:length(Lines) - 6))]}.
-%	{pre, [], unicode_list_to_html(os:cmd("systemctl list-units *.service"))}.
+	{ehtml, {table, [], [header(),{tbody, [], lists:map(fun line_to_table_row/1, lists:sublist(Lines, 2, erlang:length(Lines) - 6))}]}}.
 
 show_service_status(Service) ->
-	{pre, [], unicode_list_to_html(os:cmd("systemctl status " ++ Service))}.
+	{ehtml, {pre, [], unicode_list_to_html(os:cmd("systemctl status " ++ Service))}}.
 
 restart_service(Service) ->
-	{pre, [], unicode_list_to_html(os:cmd("systemctl restart " ++ Service))}.
+	{ehtml, {pre, [], unicode_list_to_html(os:cmd("systemctl restart " ++ Service))}}.
 
 allow_access(#arg{client_ip_port = {{192, 168, 178, _},_}}) -> true;
 allow_access(#arg{client_ip_port = {{127, 0, 0, _}, _}}) -> true;
 allow_access(_) -> false.
 
-filter_service_and_action({Service, Action}) ->
+filter_service({Service, Action}) ->
 	Services = list_of_services(),
 	Actions = list_of_actions(),
 	case contains(Services, Service) and contains(Actions, Action) of
 		true -> {Service, Action};
 		false -> undefined
 	end;
-filter_service_and_action({Service}) ->
+filter_service({Service}) ->
 	case contains(list_of_services(), Service) of
 		true -> {Service};
 		false -> undefined
 	end;
-filter_service_and_action(undefined) -> undefined.
+filter_service(undefined) -> undefined.
 
 service_and_action(Arg) when Arg#arg.pathinfo /= undefined ->
-	filter_service_and_action(list_to_tuple(string:tokens(Arg#arg.pathinfo, "/")));
+	filter_service(list_to_tuple(string:tokens(Arg#arg.pathinfo, "/")));
 service_and_action(Arg) ->
 	ServiceAndAction = case queryvar(Arg, service) of
 		{ok, Service} ->
@@ -113,7 +114,7 @@ service_and_action(Arg) ->
 			end;
 		undefined -> undefined
 	end,
-	filter_service_and_action(ServiceAndAction).
+	filter_service(ServiceAndAction).
 
 out(Arg) ->
 	{Ip, _} = Arg#arg.client_ip_port,
@@ -122,14 +123,14 @@ out(Arg) ->
 			case service_and_action(Arg) of
 				{Service, "status"} -> show_service_status(Service);
 				{Service, "restart"} -> restart_service(Service);
-				{_, Action} -> {p, [], io_lib:format("Unknown action: ~p", [Action])};
+				{_, Action} -> {ehtml, {p, [], io_lib:format("Unknown action: ~p", [Action])}};
 				{Service} -> show_service_status(Service);
-				undefined -> show_overview()
+				undefined -> show_overview(Arg)
 			end;
 		false ->
 			{h1, [], "access denied"}
 	end,
-	{ehtml, Out}.
+	Out.
 
 </erl>
 </body>
