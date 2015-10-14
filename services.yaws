@@ -45,6 +45,8 @@ sub_to_class(_) -> "".
 
 unit_to_link(Unit) -> {a, [{href, ["services.yaws/", Unit]}], Unit}.
 
+unit_to_restart_link(Unit) -> {a, [{href, ["services.yaws/", Unit, "/restart"]}], "&#xae;"}.
+
 line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	Dot = lists:sublist(Line, 1, 2),
 	Unit = string:strip(lists:sublist(Line, 3, 90)),
@@ -55,6 +57,7 @@ line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	{tr, [], [
 		{td, [], unicode_list_to_html(Dot)},
 		{td, [], unit_to_link(Unit)},
+		{td, [], unit_to_restart_link(Unit)},
 		{td, [{class, load_to_class(Load)}], Load},
 		{td, [{class, active_to_class(Active)}], Active},
 		{td, [{class, sub_to_class(Sub)}], Sub},
@@ -66,6 +69,7 @@ header() ->
 	{thead, [], {tr, [], [
 		{td, [], ""},
 		{td, [], "Unit"},
+		{td, [], ""},
 		{td, [], "Load"},
 		{td, [], "Active"},
 		{td, [], "Sub"},
