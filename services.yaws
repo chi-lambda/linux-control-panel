@@ -45,7 +45,7 @@ sub_to_class(_) -> "".
 
 unit_to_link(Unit) -> {a, [{href, ["services.yaws/", Unit]}], Unit}.
 
-unit_to_restart_link(Unit) -> {a, [{href, ["services.yaws/", Unit, "/restart"]}], "&#xae;"}.
+unit_to_restart_link(Unit) -> {a, [{href, ["services.yaws/", Unit, "/restart"]}], "restart"}.
 
 line_to_table_row(Line) when erlang:length(Line) >= 120 ->
 	Dot = lists:sublist(Line, 1, 2),
@@ -132,7 +132,7 @@ out(Arg) ->
 				undefined -> show_overview(Arg)
 			end;
 		false ->
-			{h1, [], "access denied"}
+			{ehtml, {h1, [], "access denied"}}
 	end,
 	Out.
 
